@@ -1,0 +1,65 @@
+import time
+import threading
+import serial
+
+class Extruder:
+    def __init__(self, port):
+        self.temperature = 200
+        self.running = False
+        self.serial_port = serial.Serial(port, baudrate=9600)  # Ajusta los parámetros según tu hardware
+
+    def start(self):
+        self.running = True
+        print("Extrusora iniciada")
+
+    def stop(self):
+        self.running = False
+        print("Extrusora detenida")
+
+    def read_temperature(self):
+        # Simulación de lectura de temperatura desde el hardware
+        return self.temperature
+
+    def set_temperature(self, temp):
+        # Simulación de escritura de temperatura en el hardware
+        self.temperature = temp
+
+    def update_temperature(self):
+        while True:
+            if self.running:
+                current_temperature = self.read_temperature()
+                current_temperature += 1  # Simulación de aumento de temperatura
+                self.set_temperature(current_temperature)
+                print(f"Temperatura: {current_temperature} grados")
+
+                if current_temperature >= 240:
+                    self.stop()
+                    while current_temperature >= 230:
+                        time.sleep(1)
+                        current_temperature -= 1
+                        self.set_temperature(current_temperature)
+                        print(f"Enfriando... Temperatura: {current_temperature} grados")
+                    self.start()
+
+            time.sleep(1)
+
+    def close_serial(self):
+        self.serial_port.close()
+
+if __name__ == "__main__":
+    port_name = "COM1"  # Ajusta el nombre del puerto según tu configuración
+    extruder = Extruder(port_name)
+    extruder.start()
+
+    temperature_thread = threading.Thread(target=extruder.update_temperature)
+    temperature_thread.start()
+
+    try:
+        while True:
+            command = input("Ingresa 's' para detener o 'r' para reanudar: ")
+            if command == 's':
+                extruder.stop()
+            elif command == 'r':
+                extruder.start()
+    except KeyboardInterrupt:
+        extruder.close_serial()
